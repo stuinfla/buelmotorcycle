@@ -5,7 +5,7 @@ import struct
 import logging
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from whitenoise import WhiteNoise
+from fastapi.staticfiles import StaticFiles
 
 # Import the ECM protocol definitions
 from ecm_protocol import ECM, BUEGB_RT_MAP
@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # Mount WhiteNoise to serve static files from the 'frontend' directory
 # This is the production-ready way to handle static assets
-app.mount("/", WhiteNoise(directory=BASE_DIR / "frontend", index_file="index.html"), name="static")
+app.mount("/", StaticFiles(directory=BASE_DIR / "frontend", html=True), name="static")
 
 # --- Placeholder for Real ECM Data Retrieval ---
 def get_real_ecm_data():
