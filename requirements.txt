@@ -1,5 +1,5 @@
 fastapi
 uvicorn
 gunicorn
-whitenoise
+whitenoise[brotli]>=6.0.0
 websockets
