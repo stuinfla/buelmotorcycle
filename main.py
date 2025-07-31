@@ -6,19 +6,26 @@ import logging
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 # Import the ECM protocol definitions
 from ecm_protocol import ECM, BUEGB_RT_MAP
 
-# --- FastAPI Application Setup ---
+# --- FastAPI App Initialization ---
 app = FastAPI()
 
-# Get the base directory of the project
+# Get the base directory of the script
 BASE_DIR = Path(__file__).resolve().parent
 
-# Mount WhiteNoise to serve static files from the 'frontend' directory
-# This is the production-ready way to handle static assets
-app.mount("/", StaticFiles(directory=BASE_DIR / "frontend", html=True), name="static")
+# --- Static Files and Root Endpoint ---
+# This is the robust, explicit way to serve a single-page application.
+# 1. Mount the entire 'frontend' directory under the '/static' path.
+app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend"), name="static")
+
+# 2. Create an endpoint for the root URL ('/') that serves the index.html file.
+@app.get("/", response_class=FileResponse)
+async def read_index():
+    return FileResponse(BASE_DIR / "frontend" / "index.html")
 
 # --- Placeholder for Real ECM Data Retrieval ---
 def get_real_ecm_data():
