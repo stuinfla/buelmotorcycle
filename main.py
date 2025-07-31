@@ -19,10 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # --- Static Files and Root Endpoint ---
 # This is the robust, explicit way to serve a single-page application.
-# 1. Mount the entire 'frontend' directory under the '/static' path.
-app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend"), name="static")
+# Mount the 'js' directory specifically at the '/js' path
+app.mount("/js", StaticFiles(directory=BASE_DIR / "frontend/js"), name="js")
 
-# 2. Create an endpoint for the root URL ('/') that serves the index.html file.
+# Serve the index.html at the root
 @app.get("/", response_class=FileResponse)
 async def read_index():
     return FileResponse(BASE_DIR / "frontend" / "index.html")
