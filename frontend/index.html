@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buell Digital Cockpit</title>
+    <script src="/js/gauge.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: #232526;  /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #414345, #232526);  /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #414345, #232526); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        h1 {
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 183, 255, 0.7), 0 0 20px rgba(0, 183, 255, 0.5);
+        }
+        .cockpit-container {
+            width: 100%;
+            max-width: 1000px; /* Allow more space for multiple gauges */
+            margin: 1em auto;
+            text-align: center;
+        }
+        .gauge-grid {
+            display: flex;
+            flex-wrap: wrap; /* Allow gauges to wrap on smaller screens */
+            justify-content: center;
+            align-items: center;
+            gap: 20px; /* Space between gauges */
+        }
+        .gauge-wrapper {
+            width: 100%;
+            max-width: 400px; /* Increased max size for bigger gauges */
+            flex-grow: 1;
+            flex-basis: 300px; /* Increased base size */
+        }
+
+        /* --- Responsive Design for Mobile --- */
+        @media (max-width: 768px) {
+            .gauge-grid {
+                flex-direction: column; /* Stack gauges vertically */
+                gap: 30px; /* Adjust vertical space */
+            }
+
+            h1 {
+                font-size: 1.5rem; /* Slightly smaller title on mobile */
+            }
+        }
+        .gauge-grid canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="cockpit-container">
+        <h1>Buell Digital Cockpit</h1>
+        <div class="gauge-grid">
+            <div class="gauge-wrapper"><canvas id="rpm-gauge"></canvas></div>
+            <div class="gauge-wrapper"><canvas id="temp-gauge"></canvas></div>
+            <div class="gauge-wrapper"><canvas id="volt-gauge"></canvas></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // --- Gauge Configuration ---
+            const commonOptions = {
+                width: 400,
+                height: 400,
+                minValue: 0,
+                valueBox: true,
+                animationRule: 'linear',
+                animationDuration: 200,
+
+                // --- Visual Enhancements ---
+                colorPlate: '#222',
+                borderShadowWidth: 3,
+                borderOuterWidth: 10,
+                borderMiddleWidth: 10,
+                borderInnerWidth: 10,
+                colorBorderOuter: '#333',
+                colorBorderOuterEnd: '#111',
+                colorBorderMiddle: '#222',
+                colorBorderMiddleEnd: '#111',
+                colorBorderInner: '#111',
+                colorBorderInnerEnd: '#333',
+                needleType: 'arrow',
+                needleWidth: 3,
+                needleCircleSize: 10,
+                needleCircleOuter: true,
+                needleCircleInner: false,
+                colorNeedle: '#00b7ff',
+                colorNeedleEnd: '#00b7ff',
+                colorNeedleShadowDown: '#222',
+                needleShadow: true,
+                fontValue: 'Orbitron, sans-serif',
+                fontNumbers: 'Orbitron, sans-serif',
+                fontUnitsSize: 22,
+                fontValueSize: 26,
+            };
+
+            // --- 1. Gauge Initialization ---
+            const rpmGauge = new RadialGauge({
+                ...commonOptions,
+                renderTo: 'rpm-gauge',
+                units: "RPM",
+                minValue: 0,
+                maxValue: 8000,
+                majorTicks: [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000],
+                minorTicks: 5,
+                highlights: [
+                    { from: 6500, to: 8000, color: 'rgba(255, 0, 0, .75)' }
+                ]
+            }).draw();
+
+            const tempGauge = new RadialGauge({
+                ...commonOptions,
+                renderTo: 'temp-gauge',
+                units: "°C",
+                minValue: 0,
+                maxValue: 120,
+                majorTicks: [0, 20, 40, 60, 80, 100, 120],
+                minorTicks: 4,
+                highlights: [
+                    { from: 100, to: 120, color: 'rgba(255, 0, 0, .75)' }
+                ]
+            }).draw();
+
+            const voltGauge = new RadialGauge({
+                ...commonOptions,
+                renderTo: 'volt-gauge',
+                units: "Volts",
+                minValue: 8,
+                maxValue: 16,
+                majorTicks: [8, 9, 10, 11, 12, 13, 14, 15, 16],
+                minorTicks: 2,
+                highlights: [
+                    { from: 8, to: 11.5, color: 'rgba(255, 255, 0, .75)' },
+                    { from: 14.5, to: 16, color: 'rgba(255, 0, 0, .75)' }
+                ]
+            }).draw();
+
+            // --- 2. WebSocket Connection ---
+            const ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+            ws.onopen = () => {
+                console.log("WebSocket connection established.");
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.RPM !== undefined) rpmGauge.value = data.RPM;
+                if (data.TE !== undefined) tempGauge.value = data.TE;
+                if (data.VB !== undefined) voltGauge.value = data.VB;
+            };
+
+            ws.onclose = () => {
+                console.log("WebSocket connection closed.");
+            };
+
+            ws.onerror = (error) => {
+                console.error("WebSocket Error: ", error);
+            };
+        });
+    </script>
+</body>
+</html>
